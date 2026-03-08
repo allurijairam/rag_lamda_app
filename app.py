@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 from flask import Flask, jsonify, request, session
 from langchain.memory import ChatMessageHistory
 
-from core.retreival import LLM_response_text
+from core.retreival import LLM_response_text, get_vector_store
 
 load_dotenv()
 
@@ -28,6 +28,7 @@ def create_session():
     """Ensure each request has a session_id; create one if missing."""
     if "session_id" not in session:
         session["session_id"] = str(uuid.uuid4())
+    
 
 
 def get_session_history(session_id):
@@ -44,16 +45,31 @@ def get_session_history(session_id):
         store[session_id] = ChatMessageHistory()
     return store[session_id]
 
+@app.route("/upload", methods=["POST"])
+def upload():
+    """
+    Upload a PDF file to the vector store.
+    """
+    pdf = request.files.get("pdf")
+    if not pdf:
+        return jsonify({"error": "No PDF file provided"}), 400
+    pdf.save(pdf.filename)
+    vectorstore = get_vector_store(pdf.filename)
+    return jsonify({"message": "PDF uploaded successfully"}), 200
 
-@app.route("/chat", methods=["GET"])
+@app.route("/chat", methods=["GET", "POST"])
 def chat():
     """
     Handle a chat request: run the user question through RAG and return the answer.
 
-    Expects JSON body with "question" key. Returns JSON with "answer" and "session_id".
+    Expects JSON body with "question" key (POST recommended for API Gateway).
+    Returns JSON with "answer" and "session_id".
     """
     session_id = session["session_id"]
-    question = request.json.get("question")
+    json_data = request.get_json(silent=True) or {}
+    question = json_data.get("question")
+    if not question:
+        return jsonify({"error": "Missing 'question' in request body"}), 400
     response = LLM_response_text(question, session_id, get_session_history)
     return jsonify({"answer": response, "session_id": session_id})
 

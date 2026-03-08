@@ -26,3 +26,7 @@ build/
 
 # Data / local DB (if you don't want to track)
 Data/
+
+# Lambda build artifacts
+lambda_build/
+lambda_deploy.zip

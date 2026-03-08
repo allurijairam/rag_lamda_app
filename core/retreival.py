@@ -14,9 +14,13 @@ from langchain_aws import BedrockEmbeddings, ChatBedrock
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from tqdm import tqdm
+from langchain.document_loaders import PyPDFDirectoryLoader,PyPDFLoader
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_core.vectorstores import InMemoryVectorStore
 
 warnings.filterwarnings("ignore")
 load_dotenv()
+
 
 
 def format_docs(docs):
@@ -45,34 +49,39 @@ def split_content(content: str):
     return content.split("\n")
 
 
-def _get_embeddings_model():
-    """Build Bedrock embeddings model from env config."""
+def get_vector_store(data_pth=os.getenv("data_path_variable")):
+    """
+    Load PDFs from data_pth, split into chunks, embed with Bedrock, and persist to Chroma.
+
+    Args:
+        data_pth: Directory path containing PDFs. Defaults to env var data_path_variable.
+    """
+    loader = PyPDFLoader(file_path=data_pth)
+
+    data = loader.load()
+    chunk_size = int(os.getenv("CHUNK_SIZE", "500"))
+    chunk_overlap = int(os.getenv("CHUNK_OVERLAP", "0"))
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+    )
+    print("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+    splitted_docs = splitter.split_documents(data)
     region = os.getenv("AWS_REGION", "us-east-1")
     client = boto3.client("bedrock-runtime", region_name=region)
-    return BedrockEmbeddings(
+    embeddings_model = BedrockEmbeddings(
         client=client,
         region_name=region,
         model_id=os.getenv("BEDROCK_EMBEDDING_MODEL_ID", "amazon.titan-embed-text-v1"),
     )
-
-
-def build_in_memory_vectorstore(documents):
-    """
-    Create an in-memory Chroma vectorstore from a list of documents.
-
-    Uses Bedrock embeddings from env. No persistence; store is lost when process exits.
-
-    Args:
-        documents: List of LangChain Document objects (e.g. from a PDF loader + splitter).
-
-    Returns:
-        Chroma vectorstore instance (in-memory).
-    """
-    embeddings_model = _get_embeddings_model()
-    return Chroma.from_documents(
-        documents=documents,
+    vectorstore = Chroma.from_documents(
+        documents=splitted_docs,
         embedding=embeddings_model,
+        persist_directory=os.getenv("persist_directory_db"),
     )
+    vectorstore.as_retriever()
+    return vectorstore
+
 
 
 def Multi_query(question, vectordb=None):
@@ -92,7 +101,11 @@ def Multi_query(question, vectordb=None):
     """
     region = os.getenv("AWS_REGION", "us-east-1")
     client = boto3.client("bedrock-runtime", region_name=region)
-    embeddings_model = _get_embeddings_model()
+    embeddings_model = BedrockEmbeddings(
+        client=client,
+        region_name=region,
+        model_id=os.getenv("BEDROCK_EMBEDDING_MODEL_ID", "amazon.titan-embed-text-v1"),
+    )
     if vectordb is None:
         vectordb = Chroma(
             persist_directory=os.getenv("persist_directory_db"),
@@ -120,6 +133,14 @@ def Multi_query(question, vectordb=None):
     context_fromdb = format_docs(docs2)
     return context_fromdb
 
+def save_pdf_to_vectorstore(pdf):
+    """
+    Save a PDF file to the vector store.
+    """
+    recursive_character_text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+    docs = recursive_character_text_splitter.split_documents(pdf)
+    vectorstore = InMemoryVectorStore.from_documents(docs)
+    return vectorstore
 
 def LLM_response_text(question: str, session_id: str, get_session_history, session_vectordb=None):
     """
