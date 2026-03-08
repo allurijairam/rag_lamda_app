@@ -27,6 +27,9 @@ build/
 # Data / local DB (if you don't want to track)
 Data/
 
+# Temp uploads (per-request PDFs before ingestion)
+uploads/
+
 # Lambda build artifacts
 lambda_build/
 lambda_deploy.zip
