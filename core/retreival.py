@@ -1,136 +1,164 @@
-import sys
-from dotenv import load_dotenv
+"""
+RAG retrieval and LLM response logic using AWS Bedrock and Chroma.
+
+Provides multi-query retrieval and a stateful chat chain with session history.
+"""
+
 import os
-import bs4 
-# from langchain.document_loaders import PyPDFDirectoryLoader
-from langchain_community.vectorstores import Chroma
-import boto3
-from langchain_aws import ChatBedrock,BedrockEmbeddings
-from langchain_core.prompts import ChatPromptTemplate,MessagesPlaceholder
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.runnables.history import RunnableWithMessageHistory
-from langchain.memory import ChatMessageHistory
 import warnings
+
+import boto3
+from dotenv import load_dotenv
+from langchain_community.vectorstores import Chroma
+from langchain_aws import BedrockEmbeddings, ChatBedrock
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.runnables.history import RunnableWithMessageHistory
 from tqdm import tqdm
 
 warnings.filterwarnings("ignore")
 load_dotenv()
-store = {}
+
+
 def format_docs(docs):
-    return "/n/n".join(tex.page_content for tex in docs)
+    """
+    Concatenate document page contents with a fixed separator.
 
-# def get_session_history(session_id:str):
-#     if session_id not in store:
-#         store[session_id] = ChatMessageHistory()
-#     return store[session_id]
+    Args:
+        docs: Iterable of document-like objects with .page_content.
 
-def split_content(content:str):
+    Returns:
+        Single string of all page contents joined by "/n/n".
+    """
+    return "/n/n".join(doc.page_content for doc in docs)
 
-    return content.split("/n")
 
-def Multi_query(question):
+def split_content(content: str):
+    """
+    Split a string by the literal "/n" delimiter.
 
+    Args:
+        content: String that may contain "/n" as separator.
+
+    Returns:
+        List of substrings.
+    """
+    return content.split("\n")
+
+
+def _get_embeddings_model():
+    """Build Bedrock embeddings model from env config."""
     region = os.getenv("AWS_REGION", "us-east-1")
     client = boto3.client("bedrock-runtime", region_name=region)
-    embeddings_model = BedrockEmbeddings(
+    return BedrockEmbeddings(
         client=client,
         region_name=region,
         model_id=os.getenv("BEDROCK_EMBEDDING_MODEL_ID", "amazon.titan-embed-text-v1"),
     )
-    print(1)
-    vectordb = Chroma(
-    persist_directory=os.getenv("persist_directory_db"), 
-    embedding_function=embeddings_model,
-    )
-    print(2)
-    prompt = ChatPromptTemplate.from_messages([("system","Please Generate 4 Variations of the question"),
-                                 ("user","{question}")])
-    print(3)
 
+
+def build_in_memory_vectorstore(documents):
+    """
+    Create an in-memory Chroma vectorstore from a list of documents.
+
+    Uses Bedrock embeddings from env. No persistence; store is lost when process exits.
+
+    Args:
+        documents: List of LangChain Document objects (e.g. from a PDF loader + splitter).
+
+    Returns:
+        Chroma vectorstore instance (in-memory).
+    """
+    embeddings_model = _get_embeddings_model()
+    return Chroma.from_documents(
+        documents=documents,
+        embedding=embeddings_model,
+    )
+
+
+def Multi_query(question, vectordb=None):
+    """
+    Generate multiple question variations via LLM, retrieve docs for each,
+    deduplicate by content, and return formatted context.
+
+    Uses Bedrock for embeddings and chat. Reads config from env (AWS_REGION,
+    persist_directory_db, model IDs, temperature).
+
+    Args:
+        question: User question string.
+        vectordb: Optional Chroma vectorstore to search. If None, uses the persistent DB.
+
+    Returns:
+        Formatted context string from retrieved documents.
+    """
+    region = os.getenv("AWS_REGION", "us-east-1")
+    client = boto3.client("bedrock-runtime", region_name=region)
+    embeddings_model = _get_embeddings_model()
+    if vectordb is None:
+        vectordb = Chroma(
+            persist_directory=os.getenv("persist_directory_db"),
+            embedding_function=embeddings_model,
+        )
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", "Please Generate 4 Variations of the question"),
+        ("user", "{question}"),
+    ])
     llm = ChatBedrock(
         model_id=os.getenv("BEDROCK_CHAT_MODEL_ID", "amazon.nova-micro-v1:0"),
         client=client,
         region=region,
         model_kwargs={"temperature": float(os.getenv("BEDROCK_TEMPERATURE", "0.2"))},
     )
-
     chain = prompt | llm
-
-    content = chain.invoke({'question':question}).content
-
+    content = chain.invoke({"question": question}).content
     questions = split_content(content)
-    print(4)
     docs = {}
     for ques in tqdm(questions):
-        print(ques)
-
         similar_data = vectordb.similarity_search(question)
         for dat in similar_data:
             docs[dat.page_content] = dat
-    print(5)
     docs2 = [docs[key] for key in docs.keys()]
-    print(6)
-    print(len(docs2))
     context_fromdb = format_docs(docs2)
     return context_fromdb
 
 
-
-
-
-
-
-
-def LLM_response_text(question: str, session_id: str, get_session_history):
+def LLM_response_text(question: str, session_id: str, get_session_history, session_vectordb=None):
     """
-    based on the question returns answers
+    Answer the question using RAG context and conversation history.
+
+    Retrieves context via Multi_query (from session_vectordb if provided, else
+    persistent DB), then runs a Bedrock chat chain with history.
+
+    Args:
+        question: User question string.
+        session_id: Session identifier for conversation history.
+        get_session_history: Callable(session_id) -> ChatMessageHistory.
+        session_vectordb: Optional in-memory Chroma for this session (e.g. uploaded PDF). Used for 10 min then discarded.
+
+    Returns:
+        The LLM response text (answer string).
     """
     region = os.getenv("AWS_REGION", "us-east-1")
     client = boto3.client("bedrock-runtime", region_name=region)
-
     llm = ChatBedrock(
         model_id=os.getenv("BEDROCK_CHAT_MODEL_ID", "amazon.nova-micro-v1:0"),
         client=client,
         region=region,
         model_kwargs={"temperature": float(os.getenv("BEDROCK_TEMPERATURE", "0.2"))},
     )
-
-    embeddings_model = BedrockEmbeddings(
-        client=client,
-        region_name=region,
-        model_id=os.getenv("BEDROCK_EMBEDDING_MODEL_ID", "amazon.titan-embed-text-v1"),
-    )
-
-    
-    vectordb = Chroma(
-    persist_directory=os.getenv("persist_directory_db"), 
-    embedding_function=embeddings_model,
-    )
-
-    docs = vectordb.similarity_search(question)
-    
-    # context_fromdb = format_docs(docs)
-    # print(context_fromdb)
-    context_fromdb = Multi_query(question)
-    prompt = ChatPromptTemplate.from_messages([("system","you are an expert in understanding lease and answer all the questions about it to the user using {context}"),
-                                 MessagesPlaceholder(variable_name="history"),
-                                 ("user","{question}")])
-    
+    context_fromdb = Multi_query(question, vectordb=session_vectordb)
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", "you are an expert in understanding lease and answer all the questions about it to the user using {context}"),
+        MessagesPlaceholder(variable_name="history"),
+        ("user", "{question}"),
+    ])
     chain = prompt | llm
-
     chain_with_history = RunnableWithMessageHistory(
         chain,
         get_session_history,
         input_messages_key="question",
-        history_messages_key="history"
+        history_messages_key="history",
     )
-
-
-    return chain_with_history.invoke({"context":context_fromdb,"question":question},
-                                    config={"configurable": {"session_id": session_id}}).content
-
-# LLM_response_text("what are all the charges on the lease?")
-# LLM_response_text("where is the building?")
-# print(LLM_response_text("what was my first question??","2312"))
-
-
+    return chain_with_history.invoke(
+        {"context": context_fromdb, "question": question},
+        config={"configurable": {"session_id": session_id}},
+    ).content
