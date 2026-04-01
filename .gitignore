@@ -30,6 +30,30 @@ Data/
 # Temp uploads (per-request PDFs before ingestion)
 uploads/
 
+# Logs
+logs/
+*.log
+
 # Lambda build artifacts
 lambda_build/
 lambda_deploy.zip
+*.zip
+*.tar
+*.tar.gz
+
+# AWS / SSH keys — never commit
+*.pem
+*.key
+
+# Docker (tracked separately, not needed in git for most setups)
+# Dockerfile  ← keep tracked if you want it in the repo
+
+# Chroma / session vector store data
+tmp/
+Data/db/
+
+# Utilities / scratch folders
+utils/
+
+# Large context / binary blobs
+rag_app_fresh2.tar

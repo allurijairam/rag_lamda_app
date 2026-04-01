@@ -1,0 +1,33 @@
+# Virtual environment
+.venv/
+venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Git
+.git/
+.gitignore
+
+# Secrets — pass via --env-file .env at docker run, don't bake into image
+.env
+
+# Large build / deploy artifacts
+*.tar
+*.zip
+
+# AWS keypairs
+*.pem
+
+# Chroma / session data directories (mounted as volumes at runtime)
+tmp/
+
+# IDE
+.cursor/
+.vscode/
+
+# macOS
+.DS_Store

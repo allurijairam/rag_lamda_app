@@ -100,12 +100,33 @@ def delete_session_store(session_id: str):
             pass
     else:
         print(f"Vector store for session {session_id} not found")
+def is_about_jairam(history,question,llm):
+    """Check if the history is about Jairam."""
+    response = llm.invoke("""Given this conversation history:
+                {history}
 
-def Multi_query(question, DB_store=None, session_id=None):
+                And this new question: "{question}"
+
+                Is the user asking about a person named Jairam? 
+    Reply with one word: yes or no.""")
+    # print("--------------------------------")
+    # print(response,"response")
+    # print("--------------------------------")
+    if response == "yes":
+        return True
+    else:
+        return False
+def Multi_query(question, DB_store=None, session_id=None,get_session_history=None,llm=None):
     """
     Generate multiple question variations via LLM, retrieve docs for each,
     deduplicate by content, and return formatted context from the session's vector store.
     """
+    if is_about_jairam(get_session_history(session_id),question,llm):
+        context_file_path = os.getenv("JAIRAM_ALLURI_CONTEXT_FILE")
+        with open(context_file_path, "r") as file:
+            context = file.read()
+        return context
+
     if DB_store is None or session_id not in DB_store:
         return " No context provided "
     vectordb, _ = DB_store[session_id]
@@ -150,13 +171,21 @@ def LLM_response_text(question: str, session_id: str, get_session_history, DB_st
         region=region,
         model_kwargs={"temperature": float(os.getenv("BEDROCK_TEMPERATURE", "0.2"))},
     )
-    context_fromdb = Multi_query(question, DB_store=DB_store, session_id=session_id)
+    #### use information from get_session_history to answer the question. if it is about Jairam then use Jairam's persistent DB
+    #### else use the context from the session's vector store.
+
+    
+    context_fromdb = Multi_query(question, DB_store=DB_store, session_id=session_id,get_session_history=get_session_history,llm=llm)
     prompt = ChatPromptTemplate.from_messages([
-        ("system", "you are an expert summarizer and answer all the questions about the context provided to the user using {context}"),
+        ("system", "You are here to tell why someone should Hire Jairam Alluri if asked about Jairam Alluri and answer all the questions about the context provided to the user using or if user asks anything else then still use the same context {context}"),
         MessagesPlaceholder(variable_name="history"),
         ("user", "{question}"),
     ])
+    # print(get_session_history(session_id),"hiii")
+
+
     chain = prompt | llm
+
     chain_with_history = RunnableWithMessageHistory(
         chain,
         get_session_history,

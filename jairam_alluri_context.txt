@@ -1,0 +1,76 @@
+JAIRAM ALLURI
+Dallas, TX 75013 · allurijairam@gmail.com · (469) 237-1808 · linkedin.com/in/jairam-alluri-23a624172 ·
+allurijairam.github.io/Jairam.github.io
+Summary
+Machine Learning Engineer with 4+ years of production experience in computer vision, NLP, and LLM systems. Reduced
+Azure infrastructure costs by 80% and preprocessing latency by 10× at Honeywell; holds a pending USPTO patent for a
+novel 3D vision preprocessing technique. Built a GPT-2 transformer from scratch in PyTorch and deployed a production
+RAG pipeline on AWS Bedrock. Focused on LLM systems, RAG architecture, and e cient model deployment.
+Skills
+Languages: Python, SQL
+ML & AI: PyTorch, TensorFlow, Transformers (BERT/ViT/LLaMA/GPT-2), YOLO, OpenCV, Scikit-learn, LangChain,
+RAG, Multi-Query Retrieval, RAG Fusion, Embeddings, Semantic Search, Vector Databases (ChromaDB), NLP, Time
+Series, Edge ML
+MLOps & Infra: Docker, REST API, Flask, ML ow, CI/CD, AWS (EC2, Bedrock, S3), Azure (Auto-scaling, Spot
+Instances)
+Techniques: Feature Engineering, Model Quantization, Seq2Seq, Attention Mechanisms, Positional Encodings, Custom
+Tokenization, Model Monitoring, Experiment Tracking
+Work Experience
+Machine Learning Engineer May 2023   Present
+Honeywell | Richardson, TX
+ Developed a 3D Computer Vision system using PyTorch and OpenCV with a custom Vision Transformer (ViT) and spe-
+cialized positional encodings for structural pattern classi cation; the data-preprocessing technique is pending USPTO
+patent.
+ Reduced preprocessing latency by 10× by re-architecting the Azure pipeline for parallel execution, enabling real-time
+inference on production workloads.
+ Reduced Azure cloud expenditure by 80% through workload-speci c instance selection, database con guration tuning,
+and migrating batch jobs to spot instances.
+ Developed and deployed TensorFlow Edge ML models for real-time gas concentration prediction on resource-constrained
+embedded hardware with minimal CPU overhead.
+Machine Learning Engineer June 2021   August 2022
+Straive | Chennai, India
+ Built a PyTorch deep learning OCR pipeline for automated PDF text extraction, reducing per-document operational
+cost by 90% and eliminating the manual extraction work ow.
+ Deployed a YOLO-based object detection system to automate data labeling, cutting manual annotation time by 70%
+across the team.
+ Built a Transformer-based NLP triage pipeline to classify and prioritize customer service queries by urgency, improving
+resolution speed by 70%.
+ Reduced monthly Azure cloud expenditure by 80% by migrating infrastructure to auto-scaling groups and spot instances.
+Projects
+Academic Knowledge Assistant   Hybrid RAG Pipeline   LangChain, ChromaDB, BM25, AWS Bedrock, Flask,
+Docker, Python
+ Built a domain-speci c Q&A system for academic content   students upload course notes, textbooks, and lecture PDFs
+and ask natural language questions, getting grounded answers with source references instead of generic LLM responses.
+ Implemented a hybrid retrieval layer combining ChromaDB (dense vector search) with BM25 (sparse keyword search),
+then fused results using Reciprocal Rank Fusion (RRF)   signi cantly improving recall on technical terminology and
+exact-match queries where pure semantic search fails.
+ Added Multi-Query Retrieval to decompose complex multi-part questions into sub-queries, improving answer complete-
+ness on questions that span multiple document sections.
+ Designed session memory with TTL-based caching (10-min expiry) to maintain conversation context across follow-up
+questions while automatically purging user data on session end.
+ github.com/allurijairam/rag_lamda_app · Live Demo
+GPT-2 Language Model Built from Scratch   PyTorch, Custom Tokenizer, Transformer Architecture
+ Implemented the complete GPT-2 decoder-only architecture from scratch in PyTorch: Masked Multi-Head Self-Attention,
+Feed-Forward Networks, Sinusoidal Positional Encodings, Layer Normalization, and Residual Connections   no Hug-
+gingFace or external transformer libraries used.
+ Built a character-level tokenizer from scratch and tuned training stability using Residual Connections and gradient
+clipping across deep transformer blocks.
+ Technical write-up published on Medium: medium.com/@allurijairam/gpt-2-from-scratch
+Deep Learning Autocorrect System   PyTorch, Seq2Seq, FastText, 1D-CNN, Flask
+ Built a Seq2Seq Encoder-Decoder model with Attention and 1D-CNN layers for real-time sentence-level text correction,
+handling errors that traditional spell-checkers miss.
+ Used FastText embeddings to improve generalization on rare and misspelled inputs compared to one-hot encoding
+baselines.
+ Deployed full inference pipeline as a Flask web application with end-to-end real-time correction.
+ Technical write-up: medium.com/@allurijairam/sentence-correction-using-deep-learning
+Education
+M.S. in Business Analytics   Data Science Cohort Aug 2022   May 2024
+The University of Texas at Dallas | Richardson, TX
+ GPA: 3.91/4.0 | Dean's Excellence New Student Cohort Scholarship
+ Ranked #1 in AI/ML and Statistics courses; relevant coursework: Machine Learning, Deep Learning, Statistical Mod-
+eling, Natural Language Processing
+Patents & Recognition
+ Patent Pending (USPTO)   Novel data-preprocessing technique for 3D structural pattern classi cation in industrial
+computer vision systems, Honeywell International, 2024.
+ Dean's Excellence Scholarship, University of Texas at Dallas, 2022   awarded for exceptional academic excellence
+at entry.
