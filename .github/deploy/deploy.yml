@@ -1,0 +1,41 @@
+
+name: deploy to rag to ec2
+
+on:
+  push: 
+    branches:
+      - main
+jobs:
+  deploy: 
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: checkout code
+      uses: actions/checkout@v3
+
+    - name: copy code to EC2
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{secrets.EC2_USER}}
+        key: ${{secrets.EC2_KEY}}
+        source: "."
+        target: "~/rag_app/"
+        script: | 
+
+        echo "${{ secrets.ENV_FILE }}" > ~/rag_app/.env
+
+        docker stop $(docker ps -aq) || true
+        docker rm $(docker ps -aq) || true
+        docker rmi $(docker ps -aq) || true
+
+        cd rag_app
+
+        docker build -t rag_app:latest .
+        docker run -d \
+              --name rag_app \
+              -p 80:8000 \
+              --env-file ~/rag_app/.env \
+              rag_app:latest
+        docker ps
+

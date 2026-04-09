@@ -57,3 +57,6 @@ utils/
 
 # Large context / binary blobs
 rag_app_fresh2.tar
+
+# commands
+commands.txt

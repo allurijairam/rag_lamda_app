@@ -107,12 +107,16 @@ def is_about_jairam(history,question,llm):
 
                 And this new question: "{question}"
 
-                Is the user asking about a person named Jairam? 
+                Is the user asking about a person named Jairam or about why to hire him? 
     Reply with one word: yes or no.""")
-    # print("--------------------------------")
-    # print(response,"response")
-    # print("--------------------------------")
-    if response == "yes":
+    print("--------------------------------")
+    print(response,"response")
+    print("--------------------------------")
+    print("question :",question)
+    print("--------------------------------")
+
+    
+    if response.content == "yes":
         return True
     else:
         return False
@@ -125,6 +129,9 @@ def Multi_query(question, DB_store=None, session_id=None,get_session_history=Non
         context_file_path = os.getenv("JAIRAM_ALLURI_CONTEXT_FILE")
         with open(context_file_path, "r") as file:
             context = file.read()
+        print("--------------------------------")
+        print("context :",context)
+        print("--------------------------------")
         return context
 
     if DB_store is None or session_id not in DB_store:
