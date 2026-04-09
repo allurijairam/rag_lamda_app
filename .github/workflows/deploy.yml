@@ -21,7 +21,6 @@ jobs:
         key: ${{secrets.EC2_KEY}}
         source: "."
         target: "~/rag_app/"
-        
     - name: Deploy on EC2
       uses: appleboy/ssh-action@v1.0.3
       with:
@@ -30,19 +29,19 @@ jobs:
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
 
-        echo "${{ secrets.ENV_FILE }}" > ~/rag_app/.env
+          echo "${{ secrets.ENV_FILE }}" > ~/rag_app/.env
 
-        docker stop $(docker ps -aq) || true
-        docker rm $(docker ps -aq) || true
-        docker rmi $(docker ps -aq) || true
+          docker stop $(docker ps -aq) || true
+          docker rm $(docker ps -aq) || true
+          docker rmi $(docker ps -aq) || true
 
-        cd rag_app
+          cd rag_app
 
-        docker build -t rag_app:latest .
-        docker run -d \
-              --name rag_app \
-              -p 80:8000 \
-              --env-file ~/rag_app/.env \
-              rag_app:latest
-        docker ps
+          docker build -t rag_app:latest .
+          docker run -d \
+                --name rag_app \
+                -p 80:8000 \
+                --env-file ~/rag_app/.env \
+                rag_app:latest
+          docker ps
 
