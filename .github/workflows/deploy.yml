@@ -29,7 +29,9 @@ jobs:
         key: ${{ secrets.EC2_KEY }}
         script: |
 
-          echo "${{ secrets.ENV_FILE }}" > ~/rag_app/.env
+          cat > ~/rag_app/.env << 'EOF'
+          ${{ secrets.ENV_FILE }}
+          EOF
 
           docker stop $(docker ps -aq) || true
           docker rm $(docker ps -aq) || true
