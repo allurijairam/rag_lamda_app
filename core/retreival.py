@@ -100,20 +100,16 @@ def delete_session_store(session_id: str):
             pass
     else:
         print(f"Vector store for session {session_id} not found")
-def is_about_jairam(history,question,llm):
+def is_about_jairam(history,question,llm,DB_store,session_id):
     """Check if the history is about Jairam."""
-    response = llm.invoke("""Given this conversation history:
+    response = llm.invoke(f"""Given this conversation history:
                 {history}
 
-                And this new question: "{question}"
+                And this new question: "{question}".
+                
+                Is the user asking about a person named Jairam in the new question then yes else if they are asking about a document user uploaded (user uploaded a document: {session_id in DB_store }) then the answer is no .
+    Reply with one word: yes or no. don't say anything else.""")
 
-                Is the user asking about a person named Jairam or about why to hire him? 
-    Reply with one word: yes or no.""")
-    print("--------------------------------")
-    print(response,"response")
-    print("--------------------------------")
-    print("question :",question)
-    print("--------------------------------")
 
     
     if response.content == "yes":
@@ -125,15 +121,13 @@ def Multi_query(question, DB_store=None, session_id=None,get_session_history=Non
     Generate multiple question variations via LLM, retrieve docs for each,
     deduplicate by content, and return formatted context from the session's vector store.
     """
-    if is_about_jairam(get_session_history(session_id),question,llm):
+    if is_about_jairam(get_session_history(session_id),question,llm,DB_store,session_id):
         context_file_path = os.getenv("JAIRAM_ALLURI_CONTEXT_FILE")
         with open(context_file_path, "r") as file:
             context = file.read()
-        print("--------------------------------")
-        print("context :",context)
-        print("--------------------------------")
-        return context
 
+        return context
+   
     if DB_store is None or session_id not in DB_store:
         return " No context provided "
     vectordb, _ = DB_store[session_id]

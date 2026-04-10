@@ -104,7 +104,7 @@ def upload():
         return jsonify({"error": "No session ID provided {}".format(session["session_id"])}), 400
     session_id = session["session_id"]
     pdf = request.files.get("pdf")
-    if not pdf:
+    if not pdf: 
         logging.info(f"No PDF file provided for session {session['session_id']}")
         return jsonify({"error": "No PDF file provided"}), 400
     # Save to a temp path unique to this session to avoid collisions
@@ -117,7 +117,10 @@ def upload():
         DB_store[session_id] = [vectorstore, datetime.now()]
         logging.info(f"PDF uploaded successfully for session {session['session_id']}")
         return jsonify({"message": "PDF uploaded successfully", "session_id": session_id}), 200
+    except:
+        logging.info(f"PDF failed to upload for session {session['session_id']}")
     finally:
+
         if os.path.isfile(file_path):
             try:
                 os.remove(file_path)
@@ -139,11 +142,13 @@ def chat():
     session_id = session["session_id"]
     # Restore session's vector store from disk if not in memory (e.g. after restart)
     if session_id not in DB_store:
+        logging.info("****************************** session id {session_id} not in DB ******************************")
         vs = get_vectorstore_for_session(session_id)
         if vs is not None:
             DB_store[session_id] = [vs, datetime.now()]
     # Update last-active when we have a store; otherwise RAG has no context
     if session_id in DB_store:
+        logging.info("****************************** session id {session_id}  in DB ******************************")
         DB_store[session_id][1] = datetime.now()
 
     json_data = request.get_json(silent=True) or {}
