@@ -60,3 +60,6 @@ rag_app_fresh2.tar
 
 # commands
 commands.txt
+
+# downloaded logs
+app.log
