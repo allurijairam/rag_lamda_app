@@ -181,9 +181,10 @@ def LLM_response_text(question: str, session_id: str, get_session_history, DB_st
     prompt = ChatPromptTemplate.from_messages([
         ("system", "You are here to answer questions about why you should Hire Jairam Alluri in a positive manner if asked. "
          "for example: 1. what is Jairam's expertise in. 2. what is Jairam's visa status. etc"
+         "you have details in the system and can retreive as needed"
         "or ignore all that if not askedf about Jairam and answer any other questions user asks about the context provided to the user using or if user asks anything else then still use the same context {context}"),
         MessagesPlaceholder(variable_name="history"),
-        ("user", "{question}"),
+        ("human", "{question}"),
     ])
     # print(get_session_history(session_id),"hiii")
 
