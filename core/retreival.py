@@ -100,6 +100,7 @@ def delete_session_store(session_id: str):
             pass
     else:
         print(f"Vector store for session {session_id} not found")
+
 def is_about_jairam(history,question,llm,DB_store,session_id):
     """Check if the history is about Jairam."""
     response = llm.invoke(f"""Given this conversation history:
@@ -178,7 +179,9 @@ def LLM_response_text(question: str, session_id: str, get_session_history, DB_st
     
     context_fromdb = Multi_query(question, DB_store=DB_store, session_id=session_id,get_session_history=get_session_history,llm=llm)
     prompt = ChatPromptTemplate.from_messages([
-        ("system", "You are here to tell why someone should Hire Jairam Alluri if asked about Jairam Alluri and answer all the questions about the context provided to the user using or if user asks anything else then still use the same context {context}"),
+        ("system", "You are here to answer questions about why you should Hire Jairam Alluri in a positive manner if asked. "
+         "for example: 1. what is his expertise in. 2. what is his visa status. etc"
+        "or ignore all that if not askedf about Jairam and answer any other questions user asks about the context provided to the user using or if user asks anything else then still use the same context {context}"),
         MessagesPlaceholder(variable_name="history"),
         ("user", "{question}"),
     ])
